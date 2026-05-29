@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>HubSpot SEO Bulk Updater</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ── Header ───────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header-left">
+      <img src="icons/icon48.png" alt="logo" class="logo" />
+      <div>
+        <h1 class="app-title">HubSpot SEO Bulk Updater</h1>
+        <p class="app-sub">Bulk export &amp; update meta fields</p>
+      </div>
+    </div>
+    <span id="api-status-dot" class="status-dot red" title="API key not set"></span>
+  </header>
+
+  <!-- ── Tab navigation ───────────────────────────────────────── -->
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="settings">⚙ Settings</button>
+    <button class="tab-btn"        data-tab="export">⬇ Export</button>
+    <button class="tab-btn"        data-tab="import">⬆ Import</button>
+  </nav>
+
+  <!-- ════════════════════════════════════════════════════════════
+       TAB 1 — SETTINGS
+       ════════════════════════════════════════════════════════════ -->
+  <section id="tab-settings" class="tab-panel active">
+
+    <label class="field-label" for="api-key-input">
+      HubSpot Private App Token
+    </label>
+    <input id="api-key-input" type="password"
+           class="text-input" placeholder="pat-na1-xxxxxxxx-xxxx-…" />
+    <p class="hint">
+      Create one in HubSpot → Settings → Integrations → Private Apps.<br/>
+      Required scopes: <code>cms.pages.read</code>, <code>cms.pages.write</code>,
+      <code>content</code>, <code>cms.blogs.read</code>, <code>cms.blogs.write</code>,
+      <code>account-info.security.read</code>.
+    </p>
+
+    <label class="field-label" for="base-domain-input">
+      Website Base Domain
+    </label>
+    <input id="base-domain-input" type="text"
+           class="text-input" placeholder="https://www.yourdomain.com" />
+    <p class="hint">
+      Used to build full URLs for published pages. Include https:// and no trailing slash.
+    </p>
+
+    <button id="btn-save-key" class="btn btn-primary">💾 Save Settings</button>
+    <button id="btn-clear-key" class="btn btn-ghost">🗑 Clear</button>
+    <p id="settings-status" class="inline-status hidden"></p>
+
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════════
+       TAB 2 — EXPORT
+       ════════════════════════════════════════════════════════════ -->
+  <section id="tab-export" class="tab-panel hidden">
+
+    <p class="section-desc">
+      Fetches <strong>all Site Pages</strong> and <strong>Blog Posts</strong>
+      from your HubSpot portal and downloads a CSV you can edit.
+    </p>
+
+    <!-- Content type filter -->
+    <div class="checkbox-row">
+      <label><input type="checkbox" id="chk-site-pages"    checked /> Site Pages</label>
+      <label><input type="checkbox" id="chk-landing-pages" checked /> Landing Pages</label>
+      <label><input type="checkbox" id="chk-blog-posts"    checked /> Blog Posts</label>
+    </div>
+
+    <!-- Publish status filter -->
+    <div class="checkbox-row">
+      <label><input type="checkbox" id="chk-published"   checked /> Published</label>
+      <label><input type="checkbox" id="chk-unpublished" checked /> Unpublished (Draft / Scheduled)</label>
+    </div>
+
+    <!-- Author filter (blog posts only) -->
+    <div class="field-filter-box" id="author-filter-box">
+      <p class="field-filter-label">Filter Blog Posts by Author:</p>
+      <div class="author-row">
+        <select id="author-filter-select" class="text-input" style="flex:1">
+          <option value="">— All Authors —</option>
+        </select>
+        <button id="btn-load-authors" class="btn btn-ghost" title="Fetch authors from HubSpot">🔄</button>
+      </div>
+      <p class="hint">Click 🔄 to load authors. Select one to export only their blog posts.</p>
+    </div>
+
+    <!-- Blog Type filter (blog posts only) -->
+    <div class="field-filter-box" id="blog-type-filter-box">
+      <p class="field-filter-label">Filter by Blog Type:</p>
+      <div class="author-row">
+        <select id="blog-type-select" class="text-input" style="flex:1">
+          <option value="">— All Blog Types —</option>
+        </select>
+        <button id="btn-load-blog-types" class="btn btn-ghost" title="Fetch blog types from HubSpot">🔄</button>
+      </div>
+      <p class="hint">Click 🔄 to load blog types (Blogs, Whitepapers, Press etc).</p>
+    </div>
+
+    <!-- Tags filter (blog posts only) -->
+    <div class="field-filter-box" id="tags-filter-box">
+      <p class="field-filter-label">Filter Blog Posts by Tags:</p>
+      <div class="author-row">
+        <div id="tags-dropdown-wrap" style="flex:1;position:relative">
+          <div id="tags-display" class="text-input" style="cursor:pointer;min-height:32px;display:flex;align-items:center;flex-wrap:wrap;gap:4px;padding:4px 8px">
+            <span id="tags-placeholder" style="color:var(--color-text-tertiary,#aaa);font-size:12px">— All Tags —</span>
+          </div>
+          <div id="tags-list" class="hidden" style="position:absolute;top:100%;left:0;right:0;background:var(--color-background-primary,#fff);border:1px solid #d8d8ef;border-radius:7px;max-height:180px;overflow-y:auto;z-index:100;margin-top:2px"></div>
+        </div>
+        <button id="btn-load-tags" class="btn btn-ghost" title="Fetch tags from HubSpot">🔄</button>
+      </div>
+      <p class="hint">Click 🔄 to load tags. Select one or more to filter blog posts.</p>
+    </div>
+    <div class="format-toggle">
+      <span class="field-filter-label">Export format:</span>
+      <label class="format-opt">
+        <input type="radio" name="export-format" value="csv" id="fmt-csv" checked />
+        <span>📄 CSV</span>
+      </label>
+      <label class="format-opt">
+        <input type="radio" name="export-format" value="xlsx" id="fmt-xlsx" />
+        <span>📊 XLSX <span class="badge-new">with images</span></span>
+      </label>
+      <label class="format-opt">
+        <input type="radio" name="export-format" value="html" id="fmt-html" />
+        <span>🌐 HTML <span class="badge-new">with images</span></span>
+      </label>
+    </div>
+
+    <button id="btn-export" class="btn btn-primary">⬇ Export CSV</button>
+
+    <!-- Progress -->
+    <div id="export-progress" class="progress-wrap hidden">
+      <div class="progress-bar"><div id="export-bar" class="progress-fill"></div></div>
+      <p id="export-progress-label" class="progress-label">Fetching pages…</p>
+    </div>
+
+    <p id="export-status" class="inline-status hidden"></p>
+
+    <!-- Summary table (shown after export) -->
+    <div id="export-summary" class="summary-box hidden">
+      <span id="export-count" class="badge">0</span> pages exported
+    </div>
+
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════════
+       TAB 3 — IMPORT & UPDATE
+       ════════════════════════════════════════════════════════════ -->
+  <section id="tab-import" class="tab-panel hidden">
+
+    <p class="section-desc">
+      Upload your edited CSV. Choose which fields to update, preview the changes, then push to HubSpot.
+    </p>
+
+    <!-- File picker -->
+    <label class="file-label" for="csv-file-input">
+      📂 Choose edited CSV file
+    </label>
+    <input id="csv-file-input" type="file" accept=".csv" class="file-input" />
+
+    <!-- Fields to update -->
+    <div id="import-fields-wrap" class="field-filter-box hidden">
+      <p class="field-filter-label">Fields to update:</p>
+      <div class="checkbox-row wrap">
+        <label><input type="checkbox" id="upd-meta-title"       checked /> Meta Title</label>
+        <label><input type="checkbox" id="upd-meta-desc"        checked /> Meta Description</label>
+        <label><input type="checkbox" id="upd-author"           checked /> Author <span class="blog-only">(blog only)</span></label>
+        <label><input type="checkbox" id="upd-tags"             checked /> Tags <span class="blog-only">(blog only)</span></label>
+      </div>
+    </div>
+
+    <!-- Preview table -->
+    <div id="preview-wrap" class="hidden">
+      <div class="preview-header">
+        <span id="preview-count" class="badge">0</span> rows ready to update
+        <span id="preview-warn" class="warn-label hidden"></span>
+      </div>
+      <div class="table-scroll">
+        <table id="preview-table" class="preview-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>Type</th><th>Slug</th>
+              <th>Meta Title</th><th>Meta Desc</th>
+              <th>Author</th><th>Tags</th>
+            </tr>
+          </thead>
+          <tbody id="preview-tbody"></tbody>
+        </table>
+      </div>
+
+      <button id="btn-push" class="btn btn-primary">🚀 Push Updates to HubSpot</button>
+    </div>
+
+    <!-- Push progress -->
+    <div id="push-progress" class="progress-wrap hidden">
+      <div class="progress-bar"><div id="push-bar" class="progress-fill"></div></div>
+      <p id="push-progress-label" class="progress-label">Updating…</p>
+    </div>
+
+    <!-- Results log -->
+    <div id="push-results" class="results-log hidden"></div>
+
+    <p id="import-status" class="inline-status hidden"></p>
+
+  </section>
+
+  <!-- ── Footer ───────────────────────────────────────────────── -->
+  <footer class="footer">HubSpot CMS Pages &amp; Blog Posts · MV3</footer>
+
+  <!-- ExcelJS bundled locally — MV3 blocks all external scripts -->
+  <script src="exceljs.min.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

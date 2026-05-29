@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "HubSpot SEO Bulk Updater",
+  "version": "1.0.0",
+  "description": "Export, edit, and bulk-update meta titles & descriptions across all HubSpot pages and blog posts.",
+
+  "icons": {
+    "16":  "icons/icon16.png",
+    "48":  "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16":  "icons/icon16.png",
+      "48":  "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "HubSpot SEO Bulk Updater"
+  },
+
+  /* web_accessible_resources needed so ExcelJS CDN script can be
+     injected into the popup page context                           */
+  "web_accessible_resources": [{
+    "resources": ["xlsx_builder.js"],
+    "matches":   ["<all_urls>"]
+  }],
+
+  /* Permissions:
+     - storage   : save API key locally (chrome.storage.local)
+     - downloads : trigger CSV export download                  */
+  "permissions": [
+    "storage",
+    "downloads"
+  ],
+
+  /* HubSpot API calls are made from popup.js (fetch),
+     so we declare the host permission here.            */
+  "host_permissions": [
+    "https://api.hubapi.com/*"
+  ]
+}
